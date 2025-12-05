@@ -1,0 +1,207 @@
+<!--
+Free single-file e-commerce demo
+How to use:
+1) Save this file as `index.html` on your PC.
+2) Open `index.html` in your browser to preview (works offline).
+3) To publish for free:
+   - GitHub Pages: create a new repo, upload this file as `index.html` to the repo root, then enable Pages from the main branch.
+   - Netlify: drag & drop the `index.html` into Netlify's Sites -> New site from drag & drop.
+
+Notes:
+- This is a demo frontend only (no real payments). Checkout simulates an order.
+- You can edit the PRODUCTS array in the <script> section to add/remove products.
+-->
+
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ফ্রি ই-কমার্স ডেমো</title>
+  <style>
+    :root{--accent:#0ea5a4;--bg:#f7f7fb;--card:#ffffff}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:var(--bg); color:#0f172a}
+    header{background:linear-gradient(90deg,#06b6d4, #0891b2); color:white; padding:18px 20px}
+    .container{max-width:1100px;margin:18px auto;padding:0 16px}
+    .brand{font-weight:700;font-size:20px}
+    .hero{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .hero h1{margin:0;font-size:22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:18px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 14px rgba(2,6,23,0.06)}
+    .product-img{height:160px;border-radius:8px;background:#eef2ff;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+    .product-title{font-weight:600;margin:6px 0}
+    .product-price{color:var(--accent);font-weight:700}
+    button{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .cart{position:fixed;right:18px;bottom:18px;width:320px;max-width:94%;z-index:60}
+    .cart .card{padding:12px}
+    .cart-header{display:flex;justify-content:space-between;align-items:center}
+    .cart-items{max-height:300px;overflow:auto;margin-top:10px}
+    .cart-row{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed #eef2ff}
+    .qty{width:36px;text-align:center}
+    .small{font-size:13px;color:#475569}
+    footer{padding:22px 0;text-align:center;color:#475569}
+    @media(max-width:600px){.hero{flex-direction:column;align-items:flex-start}.brand{font-size:18px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container hero">
+      <div>
+        <div class="brand">Tomar Dokan - Free Demo</div>
+        <h1>চল্লিশ সেকেন্ডে তোমার অনলাইন স্টোর</h1>
+        <div class="small">এই ডেমোটি ফ্রন্টেন্ড-অনলি। পেমেন্ট ইন্টিগ্রেশন করতে সার্ভার লাগবে।</div>
+      </div>
+      <div>
+        <div class="small">ক্যাশ কিয়ার: Demo</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <h2>প্রোডাক্টসমূহ</h2>
+      <div class="grid" id="products"></div>
+    </section>
+  </main>
+
+  <div class="cart" id="cartBox" hidden>
+    <div class="card" id="cartCard">
+      <div class="cart-header">
+        <strong>কার্ট</strong>
+        <div><span id="cartCount">0</span> আইটেম</div>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="small">সর্বমোট</div>
+          <div style="font-weight:700" id="cartTotal">৳0</div>
+        </div>
+        <div>
+          <button id="checkoutBtn">Checkout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Built with ❤️ — Free demo. Edit the products in the JS.
+  </footer>
+
+  <!-- Checkout modal (simple) -->
+  <div id="checkoutModal" style="position:fixed;inset:0;background:rgba(2,6,23,0.5);display:none;align-items:center;justify-content:center;padding:20px">
+    <div style="background:white;border-radius:12px;padding:18px;max-width:520px;width:100%">
+      <h3>Checkout</h3>
+      <div id="checkoutSummary" class="small"></div>
+      <form id="checkoutForm" style="margin-top:12px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input name="name" placeholder="Your name" required style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eef6" />
+        </div>
+        <div style="margin-bottom:8px">
+          <input name="address" placeholder="Address" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef6" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" id="cancelCheckout" style="background:#e2e8f0;color:#0f172a">Cancel</button>
+          <button type="submit">Place Order (Demo)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // PRODUCTS: change / add items here
+    const PRODUCTS = [
+      {id:1,title:'Handmade Scarf',price:450,image:svgImg('Scarf')},
+      {id:2,title:'Cushion Cover',price:650,image:svgImg('Cushion')},
+      {id:3,title:'Ceramic Mug',price:320,image:svgImg('Mug')}
+    ];
+
+    // Simple in-memory cart
+    const cart = {};
+
+    function svgImg(label){
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='160' viewBox='0 0 300 160'><rect width='100%' height='100%' fill='#eef2ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='#0369a1' font-family='Arial'>${label}</text></svg>`;
+      return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+    }
+
+    // Render products
+    function renderProducts(){
+      const root = document.getElementById('products');
+      root.innerHTML = '';
+      for(const p of PRODUCTS){
+        const el = document.createElement('div'); el.className='card';
+        el.innerHTML = `
+          <div class='product-img'><img src='${p.image}' alt='${p.title}' style='max-width:100%;max-height:100%;border-radius:6px'/></div>
+          <div class='product-title'>${p.title}</div>
+          <div class='small'>Short product description goes here.</div>
+          <div style='display:flex;justify-content:space-between;align-items:center;margin-top:10px'>
+            <div class='product-price'>৳${p.price}</div>
+            <button onclick='addToCart(${p.id})'>Add</button>
+          </div>
+        `;
+        root.appendChild(el);
+      }
+    }
+
+    function addToCart(id){
+      const prod = PRODUCTS.find(x=>x.id===id);
+      if(!prod) return;
+      if(!cart[id]) cart[id]={...prod,qty:0};
+      cart[id].qty++;
+      showCart();
+    }
+
+    function showCart(){
+      const cartBox = document.getElementById('cartBox');
+      const items = document.getElementById('cartItems');
+      const count = document.getElementById('cartCount');
+      const totalEl = document.getElementById('cartTotal');
+      const keys = Object.keys(cart);
+      if(keys.length===0){ cartBox.hidden=true; return; }
+      cartBox.hidden=false;
+      items.innerHTML='';
+      let total=0; let itemCount=0;
+      for(const k of keys){
+        const it = cart[k];
+        itemCount += it.qty;
+        total += it.qty * it.price;
+        const row = document.createElement('div'); row.className='cart-row';
+        row.innerHTML = `<div style='flex:1'><div style='font-weight:600'>${it.title}</div><div class='small'>৳${it.price} x ${it.qty} = ৳${it.price*it.qty}</div></div><div style='display:flex;flex-direction:column;align-items:flex-end'><div style='display:flex;gap:6px'><button onclick='dec(${it.id})'>-</button><div class='qty'>${it.qty}</div><button onclick='inc(${it.id})'>+</button></div><button style='margin-top:6px;background:#f8d7da;color:#7f1d1d' onclick='remove(${it.id})'>Remove</button></div>`;
+        items.appendChild(row);
+      }
+      count.textContent = itemCount;
+      totalEl.textContent = '৳' + total;
+    }
+
+    function inc(id){ cart[id].qty++; showCart(); }
+    function dec(id){ cart[id].qty--; if(cart[id].qty<=0) delete cart[id]; showCart(); }
+    function remove(id){ delete cart[id]; showCart(); }
+
+    // Checkout
+    document.getElementById('checkoutBtn').addEventListener('click',()=>{
+      const keys = Object.keys(cart);
+      if(keys.length===0){ alert('আপনার কার্ট খালি।'); return; }
+      const sum = keys.reduce((s,k)=>s + cart[k].price*cart[k].qty,0);
+      document.getElementById('checkoutSummary').innerHTML = `<div class='small'>${keys.length} প্রোডাক্ট — মোট ৳${sum}</div>`;
+      document.getElementById('checkoutModal').style.display='flex';
+    });
+    document.getElementById('cancelCheckout').addEventListener('click',()=>{document.getElementById('checkoutModal').style.display='none'});
+
+    document.getElementById('checkoutForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      // Demo: show fake success
+      const name = e.target.name.value;
+      document.getElementById('checkoutModal').style.display='none';
+      alert(`ধন্যবাদ ${name}! আপনার অর্ডার নেওয়া হয়েছে (ডেমো) — কার্ট রিসেট হয়েছে।`);
+      // reset cart
+      for(const k of Object.keys(cart)) delete cart[k];
+      showCart();
+    });
+
+    // init
+    renderProducts();
+    showCart();
+
+  </script>
+</body>
+</html>
